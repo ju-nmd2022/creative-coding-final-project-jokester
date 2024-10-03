@@ -67,18 +67,54 @@ function getRandomWord(words) {
   return words[Math.floor(Math.random() * words.length)];
 }
 
+// extract nouns from a sentence so that the system recognises important terms about the user
+function extractNouns(sentence) {
+  const ignoredWords = [
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "if",
+    "in",
+    "on",
+    "at",
+    "by",
+    "with",
+    "for",
+    "from",
+    "to",
+    "I",
+  ];
+  const words = sentence
+    .toLowerCase()
+    .replace(/[.,!?]/g, "") // remove punctuation
+    .split(" ")
+    .filter((word) => !ignoredWords.includes(word));
+
+  return words;
+}
+
 // generate a limerick using rhyming words
-// checking input if correct
 async function generatePoem() {
   const input = document.getElementById("queryInput").value;
 
   if (!input) {
-    alert("Please enter a word or phrase!");
+    alert("Please enter a sentence!");
     return;
   }
 
-  // fetch rhyming words for input (A rhyme)
-  const rhymesA = await fetchRhymes(input);
+  // extract nouns from the input
+  const nouns = extractNouns(input);
+  if (nouns.length === 0) {
+    alert("No suitable words found in your input.");
+    return;
+  }
+
+  // use the first extracted noun as the base for A rhymes
+  const baseWordA = nouns[0];
+  const rhymesA = await fetchRhymes(baseWordA);
   if (rhymesA.length === 0) {
     alert("No rhyming words found for your input.");
     return;
@@ -90,24 +126,23 @@ async function generatePoem() {
   const nounA2 = getRandomWord(rhymesA); // A rhyme 3 (for last line)
 
   // fetch rhyming words for B rhyme
-  const baseWordB = "frog";
+  const baseWordB = nouns.length > 1 ? nouns[1] : "frog"; // use the second noun or fallback to 'frog'
   const rhymesB = await fetchRhymes(baseWordB);
   if (rhymesB.length === 0) {
-    alert("No rhyming words found for the base word.");
+    alert("No rhyming words found for the second word.");
     return;
   }
 
   const nounB1 = getRandomWord(rhymesB); // B rhyme 1
   const nounB2 = getRandomWord(rhymesB); // B rhyme 2
 
-  // create limerick with a setup structure
-  // static text with random generated nouns and verbs that rhyme
+  // create the limerick
   const limerick = `
-  There once was a ${nounA1} who could ${verbA},
-  It ${verbA} all day without slack,
-  But one day it met a ${nounB1},
-  Who played with a ${nounB2} and a log,
-  And now the ${nounA2} can't go back.
+    There once was a ${nounA1} who could ${verbA},
+    It ${verbA} all day without slack,
+    But one day it met a ${nounB1},
+    Who played with a ${nounB2} and a log,
+    And now the ${nounA2} can't go back.
   `;
 
   document.getElementById("poemDisplay").textContent = limerick;
