@@ -6,15 +6,18 @@ let faces = [];
 let maxIterations = 1;
 let currentIteration = 0;
 
-// Variables to hold the joke and state
 let currentEmotion = "neutral";
 let jokeText = "";
 let jokeFetched = false; // Track if a joke has been fetched
-let tryAgainButton; // Button to fetch a new joke
+let tryAgainButton;
 
 // Video dimensions
 const videoWidth = 640;
 const videoHeight = 480;
+
+// Add a counter for button clicks
+let jokeRequestCount = 0;
+const maxJokeRequests = 10; // Maximum number of joke requests before getting a message
 
 // Load the faceMesh model, and wait for the model to be ready
 function preload() {
@@ -78,10 +81,20 @@ function draw() {
   }
 }
 
+// Add a joke request counter
 function resetJoke() {
-  jokeFetched = false; // Reset the joke fetch flag
-  jokeText = ""; // Clear the current joke
-  fetchJoke(currentEmotion); // Fetch a new joke based on the current emotion
+  jokeRequestCount++;
+
+  if (jokeRequestCount > maxJokeRequests) {
+    // If the limit is exceeded, display the message
+    jokeText = "You're requesting too many jokes, you're so boring 🥱";
+    jokeRequestCount = 0; // Reset the counter after showing the message
+  } else {
+    // Fetch a new joke
+    jokeFetched = false; // Reset the joke fetch flag
+    jokeText = ""; // Clear the current joke
+    fetchJoke(currentEmotion); // Fetch a new joke
+  }
 }
 
 function detectEmotion(face) {
@@ -133,7 +146,6 @@ function detectEmotion(face) {
 
 // Fetch a joke based on the emotion
 function fetchJoke(emotion) {
-  // Fetch a new joke regardless of previous fetch state
   let jokeAPIUrl = "https://icanhazdadjoke.com/"; // Used dad joke API
 
   fetch(jokeAPIUrl, {
@@ -150,12 +162,6 @@ function fetchJoke(emotion) {
       console.error("Error fetching joke:", error);
       jokeText = "Oops! Couldn't fetch a joke.";
     });
-}
-
-function resetJoke() {
-  jokeFetched = false; // Reset state to allow fetching
-  jokeText = ""; // Clear the joke
-  fetchJoke(currentEmotion); // Fetch a new joke immediately
 }
 
 // Function to calculate Euclidean distance between two points
