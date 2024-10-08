@@ -1,5 +1,4 @@
 let faceMesh;
-
 let options = { maxFaces: 1, refineLandmarks: false, flipped: false };
 let video;
 let faces = [];
@@ -36,7 +35,7 @@ function setup() {
 
   // Create a "Try Again" button that lets the user get a new joke
   tryAgainButton = createButton("Try Again");
-  tryAgainButton.position(width / 2 - 50, height - 30);
+  tryAgainButton.position(width / 2 - 50, height - 50);
   tryAgainButton.mousePressed(resetJoke);
 }
 
@@ -49,28 +48,23 @@ function draw() {
 
   // Center the video feed
   let videoX = (width - videoWidth) / 2;
-  let videoY = (height - videoHeight) / 2;
+  let videoY = (height - videoHeight) / 3;
   image(video, videoX, videoY, videoWidth, videoHeight);
 
   if (faces.length > 0) {
     let face = faces[0];
     let emotion = detectEmotion(face);
 
-    // Fetch a joke based on the emotion if it changes
-    if (emotion !== currentEmotion || !jokeFetched) {
-      currentEmotion = emotion;
-      fetchJoke(currentEmotion);
-    }
-
     textSize(32);
     fill(255, 0, 0);
     textAlign(CENTER);
     text(`Emotion: ${emotion}`, width / 2, height / 2 - 300);
 
-    textSize(24);
+    textSize(18);
+    textLeading(20);
     fill(255);
     let jokeX = width / 2;
-    let jokeY = height - 50;
+    let jokeY = height - 100;
     textAlign(CENTER);
     text(jokeText, jokeX, jokeY);
 
@@ -82,6 +76,12 @@ function draw() {
       ellipse(keypoint.x + videoX, keypoint.y + videoY, 1, 1);
     }
   }
+}
+
+function resetJoke() {
+  jokeFetched = false; // Reset the joke fetch flag
+  jokeText = ""; // Clear the current joke
+  fetchJoke(currentEmotion); // Fetch a new joke based on the current emotion
 }
 
 function detectEmotion(face) {
@@ -133,29 +133,29 @@ function detectEmotion(face) {
 
 // Fetch a joke based on the emotion
 function fetchJoke(emotion) {
-  if (!jokeFetched) {
-    let jokeAPIUrl = "https://icanhazdadjoke.com/"; // used dad joke API
+  // Fetch a new joke regardless of previous fetch state
+  let jokeAPIUrl = "https://icanhazdadjoke.com/"; // Used dad joke API
 
-    fetch(jokeAPIUrl, {
-      headers: {
-        Accept: "application/json", // Get the response in JSON format
-      },
+  fetch(jokeAPIUrl, {
+    headers: {
+      Accept: "application/json", // Get the response in JSON format
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      jokeText = data.joke; // Store the joke
+      jokeFetched = true; // Mark as fetched
     })
-      .then((response) => response.json())
-      .then((data) => {
-        jokeText = data.joke; // Store the joke
-        jokeFetched = true;
-      })
-      .catch((error) => {
-        console.error("Error fetching joke:", error);
-        jokeText = "Oops! Couldn't fetch a joke.";
-      });
-  }
+    .catch((error) => {
+      console.error("Error fetching joke:", error);
+      jokeText = "Oops! Couldn't fetch a joke.";
+    });
 }
 
 function resetJoke() {
-  jokeFetched = false;
-  jokeText = "";
+  jokeFetched = false; // Reset state to allow fetching
+  jokeText = ""; // Clear the joke
+  fetchJoke(currentEmotion); // Fetch a new joke immediately
 }
 
 // Function to calculate Euclidean distance between two points
