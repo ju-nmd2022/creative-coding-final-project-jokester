@@ -1,22 +1,11 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+body {
+  background-color: #000;
 }
 
-html {
-  background: #222222;
-
-  overflow: hidden;
+#video {
+  border: 3px #fff solid;
 }
 
 body {
-  font-family: sans-serif;
-  font-size: 16px;
-}
-
-.container {
-  display: flex;
-  justify-content: center;
-  margin-top: 2.5em;
+  background: #292929;
 }
