@@ -46,8 +46,20 @@ function gotFaces(results) {
   faces = results;
 }
 
+// Change background color based on the detected emotion
 function draw() {
-  background(0);
+  switch (currentEmotion) {
+    case "happy":
+      background(255, 154, 162);
+      break;
+    case "surprised":
+      background(181, 234, 215);
+      break;
+    case "neutral":
+    default:
+      background(181, 170, 191);
+      break;
+  }
 
   // Center the video feed
   let videoX = (width - videoWidth) / 2;
@@ -56,16 +68,16 @@ function draw() {
 
   if (faces.length > 0) {
     let face = faces[0];
-    let emotion = detectEmotion(face);
+    currentEmotion = detectEmotion(face);
 
     textSize(32);
-    fill(255, 0, 0);
+    fill(0);
     textAlign(CENTER);
-    text(`Emotion: ${emotion}`, width / 2, height / 2 - 300);
+    text(`Emotion: ${currentEmotion}`, width / 2, height / 2 - 300);
 
     textSize(18);
     textLeading(20);
-    fill(255);
+    fill(0);
     let jokeX = width / 2;
     let jokeY = height - 100;
     textAlign(CENTER);
