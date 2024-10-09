@@ -55,6 +55,12 @@ function draw() {
     case "surprised":
       background(181, 234, 215);
       break;
+    case "sad":
+      background(174, 198, 207);
+      break;
+    case "confused":
+      background(198, 234, 212);
+      break;
     case "neutral":
     default:
       background(181, 170, 191);
@@ -148,6 +154,27 @@ function detectEmotion(face) {
     // Detect surprise (wide eyes, raised eyebrows)
     if (eyeOpenLeft > 15 && eyeOpenRight > 15 && eyebrowDistance > 40) {
       emotion = "surprised";
+    }
+
+    // Detect sadness (small mouth and downward slope, closed eyes)
+    if (
+      mouthWidth < 35 &&
+      mouthSlope < -0.3 &&
+      eyeOpenLeft < 10 &&
+      eyeOpenRight < 10
+    ) {
+      emotion = "sad";
+    }
+
+    // Detect confusion (raised eyebrow center, neutral mouth shape, and slight eye wideness)
+    if (
+      eyebrowCenterDist > 25 &&
+      mouthSlope < 0.1 &&
+      mouthSlope > -0.1 &&
+      eyeOpenLeft > 10 &&
+      eyeOpenRight > 10
+    ) {
+      emotion = "confused";
     }
 
     return emotion;
