@@ -38,9 +38,15 @@ const excessiveClickMessages = [
   "No more jokes until you chill for a bit.",
 ];
 
-// Load the faceMesh model, and wait for the model to be ready
+// Filter variables
+let selectedFilter = "none";
+let dogFilter, hearts;
+
+// Load the faceMesh model and filter images
 function preload() {
   faceMesh = ml5.faceMesh(options, modelReady);
+  dogFilter = loadImage("dog.png"); // Replace with the correct path
+  hearts = loadImage("heart.png"); // Replace with the correct path
 }
 
 // Start detecting faces when the model is ready
@@ -55,9 +61,24 @@ function setup() {
   video.size(videoWidth, videoHeight);
   video.hide();
 
+  // Create filter buttons
+  createButton("No Filter")
+    .position(20, 20)
+    .mousePressed(() => setFilter("none"));
+  createButton("Dog")
+    .position(20, 60)
+    .mousePressed(() => setFilter("dogFilter"));
+  createButton("Hearts")
+    .position(20, 100)
+    .mousePressed(() => setFilter("hearts"));
+
   tryAgainButton = createButton("Fetch a new joke");
   tryAgainButton.position(width / 2 - 50, height - 50);
   tryAgainButton.mousePressed(resetJoke);
+}
+
+function setFilter(filter) {
+  selectedFilter = filter;
 }
 
 function gotFaces(results) {
@@ -66,6 +87,8 @@ function gotFaces(results) {
 
 // Change background color based on the detected emotion
 function draw() {
+  background(181, 170, 191);
+
   frameCounter++;
   if (frameCounter % detectionInterval === 0 && faceMesh) {
     faceMesh.detect(video, gotFaces);
@@ -99,6 +122,10 @@ function draw() {
     let face = faces[0];
     currentEmotion = detectEmotion(face);
 
+    if (selectedFilter !== "none") {
+      applyFilter(face, videoX, videoY);
+    }
+
     textSize(32);
     fill(0);
     textAlign(CENTER);
@@ -128,6 +155,32 @@ function draw() {
       noStroke();
       ellipse(keypoint.x + videoX, keypoint.y + videoY, 1, 1);
     }
+  }
+}
+
+function applyFilter(face, videoX, videoY) {
+  try {
+    if (selectedFilter === "dogFilter") {
+      let foreheadCenter = face.keypoints[10];
+      let earCenterX = foreheadCenter.x + videoX;
+      let earCenterY = foreheadCenter.y + videoY - 50;
+      image(dogFilter, earCenterX - 100, earCenterY - 10, 200, 200);
+    } else if (selectedFilter === "hearts") {
+      let foreheadCenter = face.keypoints[10];
+      let heartX = foreheadCenter.x + videoX;
+      let heartY = foreheadCenter.y + videoY - 10;
+      let heartSize = 280;
+
+      image(
+        hearts,
+        heartX - heartSize / 2,
+        heartY - heartSize / 2,
+        heartSize,
+        heartSize
+      );
+    }
+  } catch (error) {
+    console.error("Error applying filter:", error);
   }
 }
 
