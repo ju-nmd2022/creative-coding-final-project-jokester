@@ -3,21 +3,40 @@ let options = { maxFaces: 1, refineLandmarks: false, flipped: false };
 let video;
 let faces = [];
 
-let maxIterations = 1;
-let currentIteration = 0;
-
 let currentEmotion = "neutral";
 let jokeText = "";
-let jokeFetched = false; // Track if a joke has been fetched
-let tryAgainButton;
+let jokeFetched = false;
 
 // Video dimensions
 const videoWidth = 640;
 const videoHeight = 480;
 
-// Add a counter for button clicks
+// Add a counter for button clicks and timing
 let jokeRequestCount = 0;
 const maxJokeRequests = 10; // Maximum number of joke requests before getting a message
+let lastJokeRequestTime = 0;
+const requestCooldown = 4000; // 4 seconds cooldown
+
+// Throttle face detection to every 10 frames
+let frameCounter = 0;
+const detectionInterval = 10;
+
+// Cooldown remaining time
+let cooldownRemaining = 0;
+
+// List of possible messages when clicking too much
+const excessiveClickMessages = [
+  "You're requesting too many jokes, you're so boring 🥱",
+  "Seriously, you're still going?",
+  "I don't feel like giving any more jokes :(",
+  "Come on, give it a break!",
+  "Are you trying to break me? 😅",
+  "Let's take a joke break, okay?",
+  "Even I need a break sometimes.",
+  "Joke machine is cooling down...",
+  "Out of jokes for now. Try later!",
+  "No more jokes until you chill for a bit.",
+];
 
 // Load the faceMesh model, and wait for the model to be ready
 function preload() {
@@ -36,8 +55,7 @@ function setup() {
   video.size(videoWidth, videoHeight);
   video.hide();
 
-  // Create a "Try Again" button that lets the user get a new joke
-  tryAgainButton = createButton("Try Again");
+  tryAgainButton = createButton("Fetch a new joke");
   tryAgainButton.position(width / 2 - 50, height - 50);
   tryAgainButton.mousePressed(resetJoke);
 }
@@ -48,6 +66,11 @@ function gotFaces(results) {
 
 // Change background color based on the detected emotion
 function draw() {
+  frameCounter++;
+  if (frameCounter % detectionInterval === 0 && faceMesh) {
+    faceMesh.detect(video, gotFaces);
+  }
+
   switch (currentEmotion) {
     case "happy":
       background(255, 154, 162);
@@ -82,14 +105,23 @@ function draw() {
     text(`Emotion: ${currentEmotion}`, width / 2, height / 2 - 300);
 
     textSize(18);
-    textLeading(20);
     fill(0);
+    textAlign(CENTER);
     let jokeX = width / 2;
     let jokeY = height - 100;
-    textAlign(CENTER);
     text(jokeText, jokeX, jokeY);
 
-    // Draw keypoints
+    if (cooldownRemaining > 0) {
+      fill(255, 0, 0);
+      textSize(16);
+      text(
+        `Cooldown: ${Math.ceil(cooldownRemaining / 1000)}s`,
+        width / 2,
+        videoY + videoHeight + 20
+      );
+      cooldownRemaining -= deltaTime;
+    }
+
     for (let j = 0; j < face.keypoints.length; j++) {
       let keypoint = face.keypoints[j];
       fill(255, 255, 255);
@@ -101,28 +133,27 @@ function draw() {
 
 // Add a joke request counter
 function resetJoke() {
+  let currentTime = millis();
   jokeRequestCount++;
 
-  if (jokeRequestCount > maxJokeRequests) {
-    // If the limit is exceeded, display the message
-    jokeText = "You're requesting too many jokes, you're so boring 🥱";
-    jokeRequestCount = 0; // Reset the counter after showing the message
+  if (currentTime - lastJokeRequestTime < requestCooldown) {
+    jokeText =
+      excessiveClickMessages[
+        Math.floor(Math.random() * excessiveClickMessages.length)
+      ];
+    jokeRequestCount = 0;
+    cooldownRemaining = requestCooldown - (currentTime - lastJokeRequestTime);
   } else {
-    // Fetch a new joke
-    jokeFetched = false; // Reset the joke fetch flag
-    jokeText = ""; // Clear the current joke
-    fetchJoke(currentEmotion); // Fetch a new joke
+    jokeFetched = false;
+    jokeText = "";
+    fetchJoke(currentEmotion);
   }
+
+  lastJokeRequestTime = currentTime;
 }
 
 function detectEmotion(face) {
   if (face && face.keypoints.length > 0) {
-    if (currentIteration < maxIterations) {
-      console.log(face.keypoints);
-      currentIteration++;
-    }
-
-    // Get face key points
     let leftMouth = face.keypoints[61];
     let rightMouth = face.keypoints[291];
     let topMouth = face.keypoints[13];
@@ -203,7 +234,6 @@ function fetchJoke(emotion) {
     });
 }
 
-// Function to calculate Euclidean distance between two points
 function distance(p1, p2) {
   return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 }
