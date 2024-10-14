@@ -25,7 +25,6 @@ const detectionInterval = 10;
 let cooldownRemaining = 0;
 
 // Track emotion duration
-
 let emotionStartTime = 0;
 const emotionHoldThreshold = 5000;
 let emotionMessage = "";
@@ -45,8 +44,7 @@ const excessiveClickMessages = [
 ];
 
 // Filter variables
-let selectedFilter = "none";
-let dogFilter, hearts;
+let dogFilter, hearts, tearsFilter, questionMarkFilter;
 
 // Load the faceMesh model and filter images
 function preload() {
@@ -68,34 +66,16 @@ function setup() {
   video.size(videoWidth, videoHeight);
   video.hide();
 
-  // Create filter buttons
-  createButton("No Filter")
-    .position(20, 20)
-    .mousePressed(() => setFilter("none"));
-  createButton("Hearts")
-    .position(20, 60)
-    .mousePressed(() => setFilter("hearts"));
-  createButton("Tears")
-    .position(20, 100)
-    .mousePressed(() => setFilter("tears"));
-  createButton("Question Mark")
-    .position(20, 140)
-    .mousePressed(() => setFilter("questionMark"));
-
   tryAgainButton = createButton("Fetch a new joke");
   tryAgainButton.position(width / 2 - 50, height - 50);
   tryAgainButton.mousePressed(resetJoke);
-}
-
-function setFilter(filter) {
-  selectedFilter = filter;
 }
 
 function gotFaces(results) {
   faces = results;
 }
 
-// Change background color based on the detected emotion
+// Change background color and apply filter based on the detected emotion
 function draw() {
   background(181, 170, 191);
 
@@ -109,7 +89,6 @@ function draw() {
     case "happy":
       background(255, 154, 162);
       break;
-
     case "sad":
       background(174, 198, 207);
       break;
@@ -157,15 +136,14 @@ function draw() {
           emotionMessage =
             "Feeling puzzled? Don't worry, you'll figure it out!";
           break;
-        // Add more cases if necessary
         default:
           emotionMessage = "";
           break;
       }
     }
 
-    // Apply the selected filter if necessary
-    if (selectedFilter !== "none") {
+    // Apply the filter based on the current emotion
+    if (currentEmotion !== "neutral") {
       applyFilter(face, videoX, videoY);
     }
 
@@ -213,7 +191,7 @@ function draw() {
 
 function applyFilter(face, videoX, videoY) {
   try {
-    if (selectedFilter === "tears") {
+    if (currentEmotion === "sad") {
       let leftEye = face.keypoints[159];
       let tearOffsetY = 30;
 
@@ -224,13 +202,13 @@ function applyFilter(face, videoX, videoY) {
         200,
         100
       );
-    } else if (selectedFilter === "questionMark") {
+    } else if (currentEmotion === "confused") {
       let foreheadCenter = face.keypoints[10];
       let questionMarkX = foreheadCenter.x + videoX + 90;
       let questionMarkY = foreheadCenter.y + videoY - 130;
 
       image(questionMarkFilter, questionMarkX - 30, questionMarkY, 130, 130);
-    } else if (selectedFilter === "hearts") {
+    } else if (currentEmotion === "happy") {
       let foreheadCenter = face.keypoints[10];
       let heartX = foreheadCenter.x + videoX;
       let heartY = foreheadCenter.y + videoY - 10;
