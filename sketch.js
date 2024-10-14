@@ -51,8 +51,9 @@ let dogFilter, hearts;
 // Load the faceMesh model and filter images
 function preload() {
   faceMesh = ml5.faceMesh(options, modelReady);
-  dogFilter = loadImage("dog.png"); // Replace with the correct path
-  hearts = loadImage("heart.png"); // Replace with the correct path
+  hearts = loadImage("heart.png");
+  tearsFilter = loadImage("tears.png");
+  questionMarkFilter = loadImage("question marks.png");
 }
 
 // Start detecting faces when the model is ready
@@ -71,12 +72,15 @@ function setup() {
   createButton("No Filter")
     .position(20, 20)
     .mousePressed(() => setFilter("none"));
-  createButton("Dog")
-    .position(20, 60)
-    .mousePressed(() => setFilter("dogFilter"));
   createButton("Hearts")
-    .position(20, 100)
+    .position(20, 60)
     .mousePressed(() => setFilter("hearts"));
+  createButton("Tears")
+    .position(20, 100)
+    .mousePressed(() => setFilter("tears"));
+  createButton("Question Mark")
+    .position(20, 140)
+    .mousePressed(() => setFilter("questionMark"));
 
   tryAgainButton = createButton("Fetch a new joke");
   tryAgainButton.position(width / 2 - 50, height - 50);
@@ -105,9 +109,7 @@ function draw() {
     case "happy":
       background(255, 154, 162);
       break;
-    case "surprised":
-      background(181, 234, 215);
-      break;
+
     case "sad":
       background(174, 198, 207);
       break;
@@ -211,11 +213,23 @@ function draw() {
 
 function applyFilter(face, videoX, videoY) {
   try {
-    if (selectedFilter === "dogFilter") {
+    if (selectedFilter === "tears") {
+      let leftEye = face.keypoints[159];
+      let tearOffsetY = 30;
+
+      image(
+        tearsFilter,
+        leftEye.x + videoX - 40,
+        leftEye.y + videoY + tearOffsetY - 10,
+        200,
+        100
+      );
+    } else if (selectedFilter === "questionMark") {
       let foreheadCenter = face.keypoints[10];
-      let earCenterX = foreheadCenter.x + videoX;
-      let earCenterY = foreheadCenter.y + videoY - 50;
-      image(dogFilter, earCenterX - 100, earCenterY - 10, 200, 200);
+      let questionMarkX = foreheadCenter.x + videoX + 90;
+      let questionMarkY = foreheadCenter.y + videoY - 130;
+
+      image(questionMarkFilter, questionMarkX - 30, questionMarkY, 130, 130);
     } else if (selectedFilter === "hearts") {
       let foreheadCenter = face.keypoints[10];
       let heartX = foreheadCenter.x + videoX;
