@@ -228,38 +228,33 @@ function detectEmotion(face) {
       (rightMouth.y - leftMouth.y) / (rightMouth.x - leftMouth.x); // Angle between mouth corners
     let eyebrowCenterDist = distance(eyebrowCenterLeft, eyebrowCenterRight); // Eyebrow raising or pulling together (to detect anger)
 
+    // Measure the distance between the eyebrow and the eye to detect raising/lowering
+
+    // Left eyebrow and eye
+    let leftEyebrowHeight = Math.abs(leftEyebrow.y - face.keypoints[159].y); // Distance between left eyebrow and a point near left eye
+
+    // Right eyebrow and eye
+    let rightEyebrowHeight = Math.abs(rightEyebrow.y - face.keypoints[386].y); // Distance between right eyebrow and a point near right eye
+
     let emotion = "neutral";
 
     // Detect happiness (smiling)
-    if (mouthWidth > 40 && mouthHeight > 10 && mouthSlope > -0.2) {
+    if (
+      mouthWidth > 40 &&
+      mouthHeight > 5 &&
+      mouthHeight < 15 &&
+      mouthSlope > -0.1
+    ) {
       emotion = "happy";
     }
 
-    // Detect surprise (wide eyes, raised eyebrows)
-    if (eyeOpenLeft > 15 && eyeOpenRight > 15 && eyebrowDistance > 40) {
-      emotion = "surprised";
-    }
-
-    // Detect sadness (small mouth and downward slope, closed eyes)
-    if (
-      mouthWidth < 35 &&
-      mouthSlope < -0.3 &&
-      eyeOpenLeft < 10 &&
-      eyeOpenRight < 10
-    ) {
-      emotion = "sad";
-    }
-
     // Detect confusion (raised eyebrow center, neutral mouth shape, and slight eye wideness)
-    if (
-      eyebrowCenterDist > 25 &&
-      mouthSlope < 0.1 &&
-      mouthSlope > -0.1 &&
-      eyeOpenLeft > 10 &&
-      eyeOpenRight > 10
-    ) {
+    if (leftEyebrowHeight > 30 && rightEyebrowHeight > 30 && mouthHeight < 15) {
       emotion = "confused";
     }
+
+    console.log(leftEyebrowHeight);
+    console.log(rightEyebrowHeight);
 
     return emotion;
   }
