@@ -24,6 +24,12 @@ const detectionInterval = 10;
 // Cooldown remaining time
 let cooldownRemaining = 0;
 
+// Track emotion duration
+
+let emotionStartTime = 0;
+const emotionHoldThreshold = 5000;
+let emotionMessage = "";
+
 // List of possible messages when clicking too much
 const excessiveClickMessages = [
   "You're requesting too many jokes, you're so boring 🥱",
@@ -94,6 +100,7 @@ function draw() {
     faceMesh.detect(video, gotFaces);
   }
 
+  // Check and set the background color based on the current emotion
   switch (currentEmotion) {
     case "happy":
       background(255, 154, 162);
@@ -120,8 +127,42 @@ function draw() {
 
   if (faces.length > 0) {
     let face = faces[0];
-    currentEmotion = detectEmotion(face);
+    let detectedEmotion = detectEmotion(face);
 
+    // Check if the detected emotion has changed
+    if (detectedEmotion !== currentEmotion) {
+      currentEmotion = detectedEmotion;
+      emotionStartTime = millis(); // Reset the timer if emotion changes
+      emotionMessage = ""; // Clear any previous message
+    }
+
+    // Calculate how long the current emotion has been held
+    let emotionHoldTime = millis() - emotionStartTime;
+
+    // If emotion has been held for longer than the threshold, show the message
+    if (emotionHoldTime > emotionHoldThreshold) {
+      switch (currentEmotion) {
+        case "neutral":
+          emotionMessage = "Why do you look so neutral, are you sad?";
+          break;
+        case "sad":
+          emotionMessage = "Cheer up! Things will get better 😊";
+          break;
+        case "happy":
+          emotionMessage = "You're smiling a lot! Having a great day?";
+          break;
+        case "confused":
+          emotionMessage =
+            "Feeling puzzled? Don't worry, you'll figure it out!";
+          break;
+        // Add more cases if necessary
+        default:
+          emotionMessage = "";
+          break;
+      }
+    }
+
+    // Apply the selected filter if necessary
     if (selectedFilter !== "none") {
       applyFilter(face, videoX, videoY);
     }
@@ -138,6 +179,7 @@ function draw() {
     let jokeY = height - 100;
     text(jokeText, jokeX, jokeY);
 
+    // Show cooldown if applicable
     if (cooldownRemaining > 0) {
       fill(255, 0, 0);
       textSize(16);
@@ -149,6 +191,15 @@ function draw() {
       cooldownRemaining -= deltaTime;
     }
 
+    // Show the emotion message if any
+    if (emotionMessage) {
+      fill(0, 102, 153);
+      textSize(20);
+      textAlign(CENTER);
+      text(emotionMessage, width / 2, videoY + videoHeight + 60);
+    }
+
+    // Draw keypoints on the face
     for (let j = 0; j < face.keypoints.length; j++) {
       let keypoint = face.keypoints[j];
       fill(255, 255, 255);
@@ -224,8 +275,6 @@ function detectEmotion(face) {
     let eyebrowDistance = distance(leftEyebrow, rightEyebrow);
     let eyeOpenLeft = distance(face.keypoints[159], face.keypoints[145]);
     let eyeOpenRight = distance(face.keypoints[386], face.keypoints[374]);
-    let mouthSlope =
-      (rightMouth.y - leftMouth.y) / (rightMouth.x - leftMouth.x); // Angle between mouth corners
     let eyebrowCenterDist = distance(eyebrowCenterLeft, eyebrowCenterRight); // Eyebrow raising or pulling together (to detect anger)
 
     // Measure the distance between the eyebrow and the eye to detect raising/lowering
@@ -243,18 +292,25 @@ function detectEmotion(face) {
       mouthWidth > 40 &&
       mouthHeight > 5 &&
       mouthHeight < 15 &&
-      mouthSlope > -0.1
+      leftEyebrowHeight < 40 &&
+      rightEyebrowHeight < 40
     ) {
       emotion = "happy";
     }
 
     // Detect confusion (raised eyebrow center, neutral mouth shape, and slight eye wideness)
-    if (leftEyebrowHeight > 30 && rightEyebrowHeight > 30 && mouthHeight < 15) {
+    if (
+      leftEyebrowHeight > 30 &&
+      rightEyebrowHeight > 30 &&
+      mouthHeight < 25 &&
+      mouthWidth < 100 &&
+      eyeOpenLeft < 20 &&
+      eyeOpenRight < 20
+    ) {
       emotion = "confused";
     }
 
-    console.log(leftEyebrowHeight);
-    console.log(rightEyebrowHeight);
+    console.log(mouthWidth);
 
     return emotion;
   }
