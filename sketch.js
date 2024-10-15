@@ -125,6 +125,8 @@ function draw() {
       switch (currentEmotion) {
         case "neutral":
           emotionMessage = "Why do you look so neutral, are you sad?";
+          // Apply the tears filter if neutral emotion is held for more than 5 seconds
+          applyFilter(face, videoX, videoY);
           break;
         case "sad":
           emotionMessage = "Cheer up! Things will get better 😊";
@@ -191,13 +193,13 @@ function draw() {
 
 function applyFilter(face, videoX, videoY) {
   try {
-    if (currentEmotion === "sad") {
+    if (currentEmotion === "sad" || currentEmotion === "neutral") {
       let leftEye = face.keypoints[159];
       let tearOffsetY = 30;
 
       image(
         tearsFilter,
-        leftEye.x + videoX - 40,
+        leftEye.x + videoX - 60,
         leftEye.y + videoY + tearOffsetY - 10,
         200,
         100
