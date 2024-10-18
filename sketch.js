@@ -1,3 +1,5 @@
+// with help of chatGPT for facemesh issues
+
 let faceMesh;
 let options = { maxFaces: 1, refineLandmarks: false, flipped: false };
 let video;
@@ -7,27 +9,25 @@ let currentEmotion = "neutral";
 let jokeText = "";
 let jokeFetched = false;
 
-// Video dimensions
 const videoWidth = 640;
 const videoHeight = 480;
 
-// Add a counter for button clicks and timing
+// Counter for button clicks and timing
 let jokeRequestCount = 0;
 const maxJokeRequests = 10; // Maximum number of joke requests before getting a message
 let lastJokeRequestTime = 0;
 const requestCooldown = 4000; // 4 seconds cooldown
 
-// Throttle face detection to every 10 frames
 let frameCounter = 0;
 const detectionInterval = 10;
 
-// Cooldown remaining time
 let cooldownRemaining = 0;
 
-// Track emotion duration
 let emotionStartTime = 0;
 const emotionHoldThreshold = 5000;
 let emotionMessage = "";
+
+let messageShown = false;
 
 // List of possible messages when clicking too much
 const excessiveClickMessages = [
@@ -46,7 +46,6 @@ const excessiveClickMessages = [
 // Filter variables
 let dogFilter, hearts, tearsFilter, questionMarkFilter;
 
-// Load the faceMesh model and filter images
 function preload() {
   faceMesh = ml5.faceMesh(options, modelReady);
   hearts = loadImage("heart.png");
@@ -84,7 +83,6 @@ function draw() {
     faceMesh.detect(video, gotFaces);
   }
 
-  // Check and set the background color based on the current emotion
   switch (currentEmotion) {
     case "happy":
       background(255, 154, 162);
@@ -101,7 +99,6 @@ function draw() {
       break;
   }
 
-  // Center the video feed
   let videoX = (width - videoWidth) / 2;
   let videoY = (height - videoHeight) / 3;
   image(video, videoX, videoY, videoWidth, videoHeight);
@@ -115,28 +112,59 @@ function draw() {
       currentEmotion = detectedEmotion;
       emotionStartTime = millis(); // Reset the timer if emotion changes
       emotionMessage = ""; // Clear any previous message
+      messageShown = false; // Allow new message for the new emotion
     }
 
     // Calculate how long the current emotion has been held
     let emotionHoldTime = millis() - emotionStartTime;
 
-    // If emotion has been held for longer than the threshold, show the message
-    if (emotionHoldTime > emotionHoldThreshold) {
+    const emotionMessages = {
+      neutral: [
+        "Why do you look so neutral, are you sad?",
+        "Are you okay? You seem a bit unbothered.",
+        "Feeling indifferent today?",
+        "Neutral mood, huh? Something on your mind?",
+        "Your expression is like a blank canvas.",
+      ],
+      sad: [
+        "Cheer up! Things will get better 😊",
+        "You seem a bit down. Hope things brighten up soon.",
+        "Sending positive vibes your way!",
+        "It's okay to feel sad sometimes. You'll be okay.",
+        "Hang in there, brighter days are ahead!",
+      ],
+      happy: [
+        "You're smiling a lot! Having a great day?",
+        "Love that smile! Keep it up!",
+        "Your happiness is contagious!",
+        "You look so cheerful, what's the good news?",
+        "That smile says it all! Great day, right?",
+      ],
+      confused: [
+        "Feeling puzzled? Don't worry, you'll figure it out!",
+        "You look a bit lost. Need a hint?",
+        "Confused, huh? It's okay, we all get there.",
+        "Puzzled expressions look cute too!",
+        "Trying to solve a mystery? You got this!",
+      ],
+    };
+
+    // Show a random message based on the current emotion
+    function getRandomEmotionMessage(emotion) {
+      let messages = emotionMessages[emotion];
+      return messages[Math.floor(Math.random() * messages.length)];
+    }
+
+    // Apply the filter and show message based on the current emotion
+    if (emotionHoldTime > emotionHoldThreshold && !messageShown) {
       switch (currentEmotion) {
         case "neutral":
-          emotionMessage = "Why do you look so neutral, are you sad?";
-          // Apply the tears filter if neutral emotion is held for more than 5 seconds
-          applyFilter(face, videoX, videoY);
-          break;
         case "sad":
-          emotionMessage = "Cheer up! Things will get better 😊";
-          break;
         case "happy":
-          emotionMessage = "You're smiling a lot! Having a great day?";
-          break;
         case "confused":
-          emotionMessage =
-            "Feeling puzzled? Don't worry, you'll figure it out!";
+          emotionMessage = getRandomEmotionMessage(currentEmotion);
+          applyFilter(face, videoX, videoY);
+          messageShown = true; // Mark that a message has been shown
           break;
         default:
           emotionMessage = "";
@@ -161,7 +189,6 @@ function draw() {
     let jokeY = height - 100;
     text(jokeText, jokeX, jokeY);
 
-    // Show cooldown if applicable
     if (cooldownRemaining > 0) {
       fill(255, 0, 0);
       textSize(16);
@@ -173,7 +200,6 @@ function draw() {
       cooldownRemaining -= deltaTime;
     }
 
-    // Show the emotion message if any
     if (emotionMessage) {
       fill(0, 102, 153);
       textSize(20);
@@ -263,21 +289,23 @@ function detectEmotion(face) {
     let leftEye = face.keypoints[159];
     let rightEye = face.keypoints[386];
 
-    // Measure important distances
     let mouthWidth = distance(leftMouth, rightMouth);
     let mouthHeight = distance(topMouth, bottomMouth);
     let eyebrowDistance = distance(leftEyebrow, rightEyebrow);
     let eyeOpenLeft = distance(face.keypoints[159], face.keypoints[145]);
     let eyeOpenRight = distance(face.keypoints[386], face.keypoints[374]);
-    let eyebrowCenterDist = distance(eyebrowCenterLeft, eyebrowCenterRight); // Eyebrow raising or pulling together (to detect anger)
+    let eyebrowCenterDist = distance(eyebrowCenterLeft, eyebrowCenterRight);
+    // Eyebrow raising or pulling together (to detect anger)
 
     // Measure the distance between the eyebrow and the eye to detect raising/lowering
 
     // Left eyebrow and eye
-    let leftEyebrowHeight = Math.abs(leftEyebrow.y - face.keypoints[159].y); // Distance between left eyebrow and a point near left eye
+    let leftEyebrowHeight = Math.abs(leftEyebrow.y - face.keypoints[159].y);
+    // Distance between left eyebrow and a point near left eye
 
     // Right eyebrow and eye
-    let rightEyebrowHeight = Math.abs(rightEyebrow.y - face.keypoints[386].y); // Distance between right eyebrow and a point near right eye
+    let rightEyebrowHeight = Math.abs(rightEyebrow.y - face.keypoints[386].y);
+    // Distance between right eyebrow and a point near right eye
 
     let emotion = "neutral";
 
@@ -305,7 +333,6 @@ function detectEmotion(face) {
     }
 
     console.log(mouthWidth);
-
     return emotion;
   }
 
